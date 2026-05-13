@@ -45,8 +45,11 @@ export function InspectorPanel({ spec, selectedScreen }: InspectorPanelProps) {
   const duplicateComponent = useAppFlowStore(
     (state) => state.duplicateComponent
   );
+  const duplicateScreen = useAppFlowStore((state) => state.duplicateScreen);
+  const deleteScreen = useAppFlowStore((state) => state.deleteScreen);
 
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     project: true,
     screen: true,
@@ -304,6 +307,34 @@ export function InspectorPanel({ spec, selectedScreen }: InspectorPanelProps) {
                 />
               </div>
             </div>
+            {/* Screen actions: duplicate & delete */}
+            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => duplicateScreen(selectedScreen.id)}
+                className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="Duplicar pantalla"
+              >
+                <Copy size={12} />
+                Duplicar
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                disabled={spec.screens.length <= 1}
+                className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
+                  spec.screens.length <= 1
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-600 hover:text-red-600 hover:bg-red-50"
+                }`}
+                title={
+                  spec.screens.length <= 1
+                    ? "No se puede eliminar la última pantalla"
+                    : "Eliminar pantalla"
+                }
+              >
+                <Trash2 size={12} />
+                Eliminar
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -429,6 +460,43 @@ export function InspectorPanel({ spec, selectedScreen }: InspectorPanelProps) {
           Ver lógica
         </Button>
       </div>
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => setShowDeleteConfirm(false)}
+          />
+          <div className="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Eliminar pantalla
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              ¿Estás seguro de que deseas eliminar{" "}
+              <strong>{selectedScreen.name}</strong>? Se eliminarán también las
+              conexiones asociadas.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  deleteScreen(selectedScreen.id);
+                  setShowDeleteConfirm(false);
+                }}
+                className="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

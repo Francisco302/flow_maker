@@ -5,8 +5,15 @@ import type {
   ComponentSpec,
   ActionSpec,
   BusinessRule,
+  FlowConnection,
 } from "../lib/spec";
 import { defaultSpec } from "../lib/spec";
+import {
+  createDefaultScreen,
+  duplicateScreenWithNewIds,
+  removeScreenConnections,
+  getNextScreenPosition,
+} from "../lib/spec/screenUtils";
 
 interface AppFlowStore {
   spec: AppFlowSpec;
@@ -33,6 +40,20 @@ interface AppFlowStore {
   updateProjectMeta: (
     patch: Partial<Pick<AppFlowSpec, "name" | "description" | "version">>
   ) => void;
+
+  // Screen CRUD
+  addScreen: (input: {
+    name: string;
+    type: ScreenSpec["type"];
+    description?: string;
+  }) => string | null;
+  duplicateScreen: (screenId: string) => void;
+  deleteScreen: (screenId: string) => boolean;
+
+  // Flow connections
+  addFlow: (sourceScreenId: string, targetScreenId: string, label?: string) => void;
+  removeFlow: (flowId: string) => void;
+  updateFlow: (flowId: string, patch: Partial<Omit<FlowConnection, "id">>) => void;
 
   // Screen editing
   updateScreen: (
@@ -127,6 +148,127 @@ export const useAppFlowStore = create<AppFlowStore>((set, get) => ({
     })),
 
   selectComponent: (id) => set({ selectedComponentId: id }),
+
+  // --- Screen CRUD ---
+
+  addScreen: (input) => {
+    const state = get();
+    if (!input.name.trim()) return null;
+
+    const position = getNextScreenPosition(state.spec.screens);
+    const newScreen = createDefaultScreen({
+      name: input.name.trim(),
+      type: input.type,
+      description: input.description,
+      position,
+    });
+
+    set({
+      spec: {
+        ...state.spec,
+        screens: [...state.spec.screens, newScreen],
+      },
+      selectedScreenId: newScreen.id,
+      selectedComponentId: null,
+    });
+
+    return newScreen.id;
+  },
+
+  duplicateScreen: (screenId) => {
+    const state = get();
+    const screen = state.spec.screens.find((s) => s.id === screenId);
+    if (!screen) return;
+
+    const newScreen = duplicateScreenWithNewIds(screen);
+
+    set({
+      spec: {
+        ...state.spec,
+        screens: [...state.spec.screens, newScreen],
+      },
+      selectedScreenId: newScreen.id,
+      selectedComponentId: null,
+    });
+  },
+
+  deleteScreen: (screenId) => {
+    const state = get();
+    // Don't allow deleting the last screen
+    if (state.spec.screens.length <= 1) return false;
+
+    // Remove connections referencing this screen
+    const cleanedSpec = removeScreenConnections(state.spec, screenId);
+
+    // Remove the screen itself
+    const newScreens = cleanedSpec.screens.filter((s) => s.id !== screenId);
+
+    // Select another screen if the deleted one was selected
+    const newSelectedId =
+      state.selectedScreenId === screenId
+        ? newScreens[0]?.id || null
+        : state.selectedScreenId;
+
+    set({
+      spec: {
+        ...cleanedSpec,
+        screens: newScreens,
+      },
+      selectedScreenId: newSelectedId,
+      selectedComponentId:
+        state.selectedScreenId === screenId
+          ? null
+          : state.selectedComponentId,
+    });
+
+    return true;
+  },
+
+  // --- Flow connections ---
+
+  addFlow: (sourceScreenId, targetScreenId, label) => {
+    const state = get();
+    // Don't allow self-connections
+    if (sourceScreenId === targetScreenId) return;
+    // Don't allow duplicate connections between same source/target
+    const exists = state.spec.flows.some(
+      (f) => f.sourceScreenId === sourceScreenId && f.targetScreenId === targetScreenId
+    );
+    if (exists) return;
+
+    const suffix = Date.now().toString(36).slice(-6);
+    const newFlow: FlowConnection = {
+      id: `flow_${suffix}`,
+      sourceScreenId,
+      targetScreenId,
+      label,
+    };
+
+    set({
+      spec: {
+        ...state.spec,
+        flows: [...state.spec.flows, newFlow],
+      },
+    });
+  },
+
+  removeFlow: (flowId) =>
+    set((state) => ({
+      spec: {
+        ...state.spec,
+        flows: state.spec.flows.filter((f) => f.id !== flowId),
+      },
+    })),
+
+  updateFlow: (flowId, patch) =>
+    set((state) => ({
+      spec: {
+        ...state.spec,
+        flows: state.spec.flows.map((f) =>
+          f.id === flowId ? { ...f, ...patch } : f
+        ),
+      },
+    })),
 
   // --- Project meta ---
 

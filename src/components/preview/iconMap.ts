@@ -1,0 +1,83 @@
+import {
+  Filter,
+  Home,
+  Search,
+  User,
+  ChevronDown,
+  ChevronRight,
+  Star,
+  Plus,
+  Settings,
+  Heart,
+  Bell,
+  Mail,
+  MapPin,
+  Calendar,
+  Camera,
+  Edit,
+  Trash2,
+  Check,
+  X,
+  Square,
+  Image,
+  ShoppingCart,
+  Bookmark,
+  Share2,
+  Phone,
+  MessageCircle,
+  Clock,
+  Tag,
+  Grid3X3,
+  List,
+  Menu,
+  ArrowLeft,
+  MoreHorizontal,
+} from "lucide-react";
+import type { ElementType } from "react";
+
+const iconRegistry: Record<string, ElementType> = {
+  filter: Filter,
+  search: Search,
+  home: Home,
+  user: User,
+  plus: Plus,
+  settings: Settings,
+  heart: Heart,
+  bell: Bell,
+  mail: Mail,
+  "map-pin": MapPin,
+  location: MapPin,
+  calendar: Calendar,
+  camera: Camera,
+  edit: Edit,
+  trash: Trash2,
+  check: Check,
+  x: X,
+  close: X,
+  star: Star,
+  square: Square,
+  image: Image,
+  cart: ShoppingCart,
+  bookmark: Bookmark,
+  share: Share2,
+  phone: Phone,
+  message: MessageCircle,
+  clock: Clock,
+  tag: Tag,
+  grid: Grid3X3,
+  list: List,
+  menu: Menu,
+  back: ArrowLeft,
+  more: MoreHorizontal,
+  "chevron-down": ChevronDown,
+  "chevron-right": ChevronRight,
+};
+
+/** Get a lucide icon component by name. Falls back to Square if not found. */
+export function getIcon(name?: string): ElementType {
+  if (!name) return Square;
+  return iconRegistry[name.toLowerCase()] || Square;
+}
+
+/** Default icons for bottom nav items */
+export const defaultNavIcons = ["home", "search", "plus", "bell", "user"];

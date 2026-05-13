@@ -31,7 +31,7 @@ export function ScreenPreview({
   const rowHeight = screen.canvas.rowHeight;
   const columnWidth = containerWidth / screen.canvas.columns;
 
-  // Non-editable mode: still allow selection via click
+  // Non-editable mode: allow selection via click with hover effects
   if (!editable) {
     return (
       <MobileFrame
@@ -40,27 +40,30 @@ export function ScreenPreview({
         rowHeight={rowHeight}
         editable={false}
       >
-        {screen.components.map((component) => (
-          <div
-            key={component.id}
-            onClick={(e) => {
-              e.stopPropagation();
-              selectComponent(component.id);
-            }}
-            className={`cursor-pointer transition-all ${
-              selectedComponentId === component.id
-                ? "ring-2 ring-blue-500 ring-offset-1 rounded"
-                : "hover:ring-1 hover:ring-blue-300 rounded"
-            }`}
-            style={gridStyleForComponent(component, screen.canvas.columns, screen.canvas.rows)}
-          >
-            <ComponentRenderer
-              component={component}
-              mockData={mockData}
-              skipGridStyle={true}
-            />
-          </div>
-        ))}
+        {screen.components.map((component) => {
+          const isSelected = selectedComponentId === component.id;
+          return (
+            <div
+              key={component.id}
+              onClick={(e) => {
+                e.stopPropagation();
+                selectComponent(component.id);
+              }}
+              className={`cursor-pointer transition-all relative ${
+                isSelected
+                  ? "ring-2 ring-neutral-900 ring-offset-1 rounded-lg z-10 bg-blue-50/30"
+                  : "hover:ring-1 hover:ring-neutral-300 hover:shadow-sm rounded-lg"
+              }`}
+              style={gridStyleForComponent(component)}
+            >
+              <ComponentRenderer
+                component={component}
+                mockData={mockData}
+                skipGridStyle={true}
+              />
+            </div>
+          );
+        })}
       </MobileFrame>
     );
   }
@@ -125,23 +128,28 @@ export function ScreenPreview({
             }}
             style={{
               border: isSelected
-                ? "2px solid #2563eb"
-                : "2px dashed #60a5fa",
+                ? "2px solid #171717"
+                : "1px dashed #d4d4d4",
+              borderRadius: "8px",
               backgroundColor: isSelected
-                ? "rgba(37, 99, 235, 0.08)"
-                : "rgba(96, 165, 250, 0.05)",
+                ? "rgba(23, 23, 23, 0.03)"
+                : "transparent",
               zIndex: isSelected ? 10 : 1,
               cursor: "move",
+              transition: "border-color 0.15s, background-color 0.15s",
             }}
           >
             <div
               className="w-full h-full"
               style={{ pointerEvents: "none" }}
             >
-              <ComponentRendererEditable
-                component={component}
-                mockData={mockData}
-              />
+              <div className="w-full h-full p-1 flex items-center justify-center overflow-hidden">
+                <ComponentRenderer
+                  component={component}
+                  mockData={mockData}
+                  skipGridStyle={true}
+                />
+              </div>
             </div>
           </Rnd>
         );
@@ -150,30 +158,8 @@ export function ScreenPreview({
   );
 }
 
-function ComponentRendererEditable({
-  component,
-  mockData,
-}: {
-  component: ComponentSpec;
-  mockData?: Record<string, any[]>;
-}) {
-  return (
-    <div className="w-full h-full p-2 flex items-center justify-center overflow-hidden">
-      <ComponentRenderer
-        component={component}
-        mockData={mockData}
-        skipGridStyle={true}
-      />
-    </div>
-  );
-}
-
 /** Generate inline grid placement style for non-editable mode */
-function gridStyleForComponent(
-  component: ComponentSpec,
-  _columns: number,
-  _rows: number
-): React.CSSProperties {
+function gridStyleForComponent(component: ComponentSpec): React.CSSProperties {
   return {
     gridColumnStart: component.layout.colStart,
     gridColumnEnd: component.layout.colStart + component.layout.colSpan,

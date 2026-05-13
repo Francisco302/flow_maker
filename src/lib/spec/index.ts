@@ -31,3 +31,15 @@ export {
     createDefaultComponent,
     createDefaultBusinessRule,
 } from './editorUtils';
+
+// Re-export screen utilities
+export {
+    createScreenId,
+    createDefaultScreen,
+    duplicateScreenWithNewIds,
+    removeScreenConnections,
+    getNextScreenPosition,
+    screenNameExists,
+    SCREEN_TYPES,
+    SCREEN_TYPE_LABELS,
+} from './screenUtils';
